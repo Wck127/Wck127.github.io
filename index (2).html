@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Investment Analysis & Portfolio Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Share+Tech+Mono&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0e1a;
+      --bg2:       #0f1424;
+      --bg3:       #141929;
+      --bg4:       #1a2035;
+      --gold:      #c8a84b;
+      --gold-dim:  #8a6f2a;
+      --gold-glow: rgba(200,168,75,0.18);
+      --teal:      #4fd1c5;
+      --teal-dim:  #2a8a82;
+      --teal-glow: rgba(79,209,197,0.12);
+      --text:      #e8e0d0;
+      --text-mid:  #a89f8c;
+      --text-dim:  #5a5448;
+      --border:    rgba(200,168,75,0.15);
+      --border2:   rgba(79,209,197,0.12);
+      --scanline:  rgba(0,0,0,0.35);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Jost', sans-serif;
+      font-size: 15px;
+      font-weight: 300;
+      line-height: 1.6;
+      position: relative;
+    }
+
+    /* scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        var(--scanline) 3px,
+        var(--scanline) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.25;
+    }
+
+    /* noise grain */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9998;
+      opacity: 0.4;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,14,26,0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 0.5px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 52px;
+    }
+    .nav-brand {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-mid);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--teal); }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* ── HERO ── */
+    .hero { padding: 5rem 0 3.5rem; }
+
+    .eyebrow {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 5vw, 3.4rem);
+      font-weight: 400;
+      line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 1.25rem;
+      max-width: 680px;
+    }
+    h1 em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .hero-body {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2.5rem;
+      align-items: start;
+      margin-top: 1.5rem;
+    }
+    .hero-desc {
+      color: var(--text-mid);
+      font-size: 15px;
+      line-height: 1.85;
+      max-width: 560px;
+      font-weight: 300;
+    }
+    .hero-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 175px;
+    }
+    .meta-card {
+      background: var(--bg3);
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      padding: 0.7rem 1rem;
+    }
+    .meta-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 3px;
+    }
+    .meta-value {
+      font-size: 12.5px;
+      font-weight: 400;
+      color: var(--teal);
+    }
+
+    .header-rule {
+      height: 1px;
+      background: linear-gradient(90deg, var(--gold) 0%, var(--teal-dim) 50%, transparent 100%);
+      margin: 2rem 0;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 1.25rem;
+    }
+    .badge {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      padding: 4px 10px;
+      border-radius: 3px;
+      letter-spacing: 0.08em;
+      font-weight: 400;
+    }
+    .badge-gold  { background: rgba(200,168,75,0.12); color: var(--gold); border: 0.5px solid var(--gold-dim); }
+    .badge-green { background: rgba(79,209,197,0.08); color: var(--teal); border: 0.5px solid var(--teal-dim); }
+    .badge-slate { background: var(--bg4); color: var(--text-mid); border: 0.5px solid rgba(255,255,255,0.07); }
+
+    /* ── SECTION ── */
+    section { padding: 3rem 0; border-top: 0.5px solid var(--border); }
+
+    h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 1.25rem;
+    }
+    h3 {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.75rem;
+      font-weight: 400;
+    }
+    p { color: var(--text-mid); line-height: 1.85; margin-bottom: 1rem; font-weight: 300; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── PROJECT CARDS ── */
+    .project-card {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem;
+      margin-bottom: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+    .project-card:hover { border-color: rgba(200,168,75,0.35); }
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--teal));
+    }
+    .project-number {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .project-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 0.65rem;
+    }
+    .project-desc {
+      font-size: 13.5px;
+      color: var(--text-mid);
+      line-height: 1.8;
+      margin-bottom: 1.1rem;
+      font-weight: 300;
+    }
+    .topic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+      gap: 8px;
+      margin-top: 0.5rem;
+    }
+    .topic-item {
+      background: var(--bg3);
+      border-radius: 5px;
+      padding: 0.65rem 0.8rem;
+      border: 0.5px solid rgba(255,255,255,0.05);
+    }
+    .topic-item span {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .topic-item p {
+      font-size: 12px;
+      color: var(--text-mid);
+      margin: 0;
+      line-height: 1.5;
+      font-weight: 300;
+    }
+    .topic-item a {
+      color: var(--teal) !important;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    .topic-item a:hover { color: var(--gold) !important; }
+
+    /* ── TOOLS ── */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 0.75rem;
+    }
+    .tool-box {
+      background: var(--bg2);
+      border: 0.5px solid var(--border2);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .tool-box:hover { border-color: var(--teal-dim); }
+    .tool-name {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--teal);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .tool-use { font-size: 11px; color: var(--text-dim); font-weight: 300; }
+
+    /* ── DISCLAIMER ── */
+    .disclaimer {
+      background: var(--bg3);
+      border: 0.5px solid var(--border);
+      border-left: 2px solid var(--gold-dim);
+      border-radius: 0 6px 6px 0;
+      padding: 1rem 1.25rem;
+      margin-top: 1.5rem;
+    }
+    .disclaimer p {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin: 0;
+      line-height: 1.7;
+    }
+    .disclaimer strong { color: var(--text-mid); font-weight: 400; }
+
+    /* ── CONTACT ── */
+    .contact-strip {
+      background: var(--bg3);
+      border: 0.5px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+    .contact-strip p { color: var(--text-mid); font-size: 14px; margin: 0; font-weight: 300; }
+    .contact-strip strong { color: var(--text); font-weight: 400; }
+    .contact-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      background: transparent;
+      color: var(--gold);
+      border: 0.5px solid var(--gold-dim);
+      border-radius: 4px;
+      padding: 10px 20px;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.2s, color 0.2s;
+    }
+    .contact-btn:hover { background: var(--gold-glow); color: var(--gold); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 0.5px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+    }
+    footer p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    /* ── HERO IMAGE ── */
+    .hero-top {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 2.5rem;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .hero-image-wrap {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      height: 340px;
+      border: 0.5px solid var(--border);
+    }
+    .hero-image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+      filter: saturate(0.75) brightness(0.88);
+    }
+    .hero-image-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to right,
+        transparent 60%,
+        var(--bg) 100%
+      );
+    }
+    .hero-text { }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav { padding: 0 1rem; }
+      .nav-links { display: none; }
+      .container { padding: 0 1.25rem; }
+      .hero { padding: 3rem 0 2rem; }
+      .hero-top { grid-template-columns: 1fr; }
+      .hero-image-wrap { height: 220px; }
+      
+      .hero-meta { flex-direction: row; flex-wrap: wrap; }
+      .tools-grid { grid-template-columns: repeat(2, 1fr); }
+      .contact-strip { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-brand" href="#">Investment Portfolio</a>
+    <ul class="nav-links">
+      <li><a href="#about">About</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#tools">Tools</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <div class="container">
+    <div class="hero">
+      <div class="hero-top">
+        <div class="hero-image-wrap">
+          <img src="hero.jpg" alt="Professional overlooking city skyline at night" />
+        </div>
+        <div class="hero-text">
+          <span class="eyebrow">Will C. K. &nbsp;·&nbsp; Wck127 &nbsp;·&nbsp; Registered Financial Services Professional</span>
+          <h1>Investment Analysis<br>&amp; <em>Portfolio Projects</em></h1>
+          <div class="header-rule"></div>
+          <p class="hero-desc">Registered financial services professional looking to develop portfolio and equity analysis skills. This page collects my active GitHub projects — Python-based financial tools, Excel models, and an evolving investment analysis study repository.</p>
+          <div class="badge-row">
+            <span class="badge badge-green">Equity Research</span>
+            <span class="badge badge-green">Portfolio Theory</span>
+            <span class="badge badge-slate">Fixed Income</span>
+            <span class="badge badge-slate">Derivatives</span>
+            <span class="badge badge-slate">Risk Evaluation</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="container">
+    <section id="about">
+      <h2>About</h2>
+      <p>I'm Will, a registered financial services professional actively building skills in portfolio analysis and equity research. My goal is to combine my industry foundation with hands-on technical projects — using Python, Excel, Power BI, and Tableau to tackle real investment problems and deepen my quantitative fluency.</p>
+      <p>This page brings together my GitHub projects in one place. Each one reflects a specific concept I've studied and applied — from calculating zero-coupon bond yields to measuring risk-adjusted performance. The work is practical by design: grounded in real formulas, built with real tools, and growing as I continue learning.</p>
+    </section>
+  </div>
+
+  <!-- PROJECTS -->
+  <div class="container">
+    <section id="projects">
+      <h2>Projects</h2>
+
+      <div class="project-card">
+        <span class="project-number">PROJECT 01 &nbsp;·&nbsp; JUPYTER NOTEBOOK &nbsp;·&nbsp; PYTHON</span>
+        <div class="project-title">Zero-Coupon Bond Calculation</div>
+        <p class="project-desc">A Python mini-project calculating zero-coupon bond yields using core programming concepts — variables, loops, functions, and NumPy. Developed in a DataCamp workspace to strengthen foundational Python skills while applying them to a fixed income instrument.</p>
+        <div class="topic-grid">
+          <div class="topic-item"><span>Concept</span><p>Zero-coupon bond yield &amp; pricing mechanics</p></div>
+          <div class="topic-item"><span>Tools</span><p>Python, NumPy, Jupyter Notebook</p></div>
+          <div class="topic-item"><span>Skills</span><p>Variables, loops, functions — core Python fundamentals</p></div>
+          <div class="topic-item"><span>Repo</span><p><a href="https://github.com/Wck127/Zero-coupon-bond-calculation-python-AI" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">View on GitHub →</a></p></div>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <span class="project-number">PROJECT 02 &nbsp;·&nbsp; JUPYTER NOTEBOOK &nbsp;·&nbsp; PYTHON</span>
+        <div class="project-title">Sharpe Ratio Calculator</div>
+        <p class="project-desc">A Python fundamentals project that calculates and interprets the Sharpe ratio using only loops, functions, and NumPy to measure risk-adjusted portfolio performance — building both programming and investment analysis intuition simultaneously.</p>
+        <div class="topic-grid">
+          <div class="topic-item"><span>Concept</span><p>Risk-adjusted return &amp; performance benchmarking</p></div>
+          <div class="topic-item"><span>Tools</span><p>Python, NumPy, Jupyter Notebook</p></div>
+          <div class="topic-item"><span>Skills</span><p>Loops, functions, NumPy array operations</p></div>
+          <div class="topic-item"><span>Repo</span><p><a href="https://github.com/Wck127/Sharpe-ratio-calculator-python-AI" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">View on GitHub →</a></p></div>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <span class="project-number">PROJECT 03 &nbsp;·&nbsp; JUPYTER NOTEBOOK &nbsp;·&nbsp; PYTHON</span>
+        <div class="project-title">Calmar Ratio Calculator</div>
+        <p class="project-desc">A Python fundamentals project that calculates and interprets the Calmar ratio using variables, loops, functions, and NumPy — measuring portfolio performance relative to maximum drawdown and building a practical understanding of downside risk.</p>
+        <div class="topic-grid">
+          <div class="topic-item"><span>Concept</span><p>Calmar ratio &amp; maximum drawdown analysis</p></div>
+          <div class="topic-item"><span>Tools</span><p>Python, NumPy, Jupyter Notebook</p></div>
+          <div class="topic-item"><span>Skills</span><p>Variables, loops, functions, downside risk metrics</p></div>
+          <div class="topic-item"><span>Repo</span><p><a href="https://github.com/Wck127/Calmar-Ratio-python-AI-Project-" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">View on GitHub →</a></p></div>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <span class="project-number">PROJECT 04 &nbsp;·&nbsp; EXCEL &nbsp;·&nbsp; STUDY REPOSITORY</span>
+        <div class="project-title">Investment Analysis Study Repository</div>
+        <p class="project-desc">An evolving investment analysis repository that translates core performance and return concepts into practical Excel-based tools. Built to simplify complex financial calculations through structured models — combining formula reference, worked examples, and real-world application across valuation, risk, and portfolio construction.</p>
+        <div class="topic-grid">
+          <div class="topic-item"><span>Valuation</span><p>DCF, DDM, multiples-based approaches</p></div>
+          <div class="topic-item"><span>Risk &amp; return</span><p>Performance metrics, attribution, portfolio evaluation</p></div>
+          <div class="topic-item"><span>Tools</span><p>Excel, structured financial models</p></div>
+          <div class="topic-item"><span>Repo</span><p><a href="https://github.com/Wck127/Investment-Analysis-Study-Repository" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">View on GitHub →</a></p></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- TOOLS -->
+  <div class="container">
+    <section id="tools">
+      <h2>Technology stack</h2>
+      <p>I am actively building proficiency across these tools to enhance data-driven investment analysis and integrate technology into modern portfolio management workflows.</p>
+      <div class="tools-grid">
+        <div class="tool-box"><span class="tool-name">Python</span><span class="tool-use">Modeling &amp; automation</span></div>
+        <div class="tool-box"><span class="tool-name">Power BI</span><span class="tool-use">Dashboard design</span></div>
+        <div class="tool-box"><span class="tool-name">Excel</span><span class="tool-use">Financial models</span></div>
+        <div class="tool-box"><span class="tool-name">Tableau</span><span class="tool-use">Data visualization</span></div>
+      </div>
+      <div class="badge-row">
+        <span class="badge badge-slate">AI-augmented workflows</span>
+        <span class="badge badge-slate">GitHub version control</span>
+        <span class="badge badge-slate">Continuous learning</span>
+      </div>
+
+      <div class="disclaimer">
+        <p><strong>Independent project notice:</strong> This repository is independently developed and is not endorsed or sponsored by CFA Institute. It does not reproduce or reference copyrighted CFA curriculum content or exam preparation materials. All content is based on publicly available financial concepts, original worked examples, and the author's own explanations and analysis.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- CONTACT -->
+  <div class="container">
+    <section id="contact">
+      <h2>Get in touch</h2>
+      <p>I welcome recommendations, feedback, and suggestions on how to improve these projects. If you work in investment management, research, or a related field and would like to connect, feel free to reach out.</p>
+      <div class="contact-strip">
+        <p><strong>Open to feedback.</strong> Recommendations, suggestions, or ways to improve are always welcome — reach out via GitHub or LinkedIn.</p>
+        <a class="contact-btn" href="https://github.com/Wck127" target="_blank" rel="noopener">View on GitHub →</a>
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Independently developed &nbsp;·&nbsp; Not affiliated with CFA Institute &nbsp;·&nbsp; All examples are original</p>
+  </footer>
+
+</body>
+</html>
